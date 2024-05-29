@@ -764,6 +764,12 @@ int  linsolve(Smatrix *sm, int n)
 
     int    i, istop, istrt, isub, j, k, kfirst, newk;
     double bj, diagj, ljk;
+    FILE *fp;
+    fp = fopen("/home/nico/test.txt","w");
+    fprintf(fp, "\nHello from EPANET");
+    fclose(fp);
+
+    system("python /home/nico/QuantumApplicationLab/vitens/EPANET/src/py/quantum_linsolve.py");
 
     memset(temp,  0, (n + 1) * sizeof(double));
     memset(link,  0, (n + 1) * sizeof(int));
