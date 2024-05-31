@@ -747,7 +747,6 @@ int smatrix_to_json(Smatrix *sm, int n)
     int *link = sm->link;
     int *first = sm->first;
     int ncoeffs = sm->Ncoeffs;
-
     int idx, istart, istop;
 
     FILE *fp;
@@ -755,44 +754,62 @@ int smatrix_to_json(Smatrix *sm, int n)
 
     fprintf(fp, "{\n\t\"A\": {\n");
     fprintf(fp, "\t\t\"Aii\": [ \n");
-    for (idx = 0; idx < n; idx++)
+    for (idx = 1; idx <= n; idx++)
     {
-        fprintf(fp, "\t\t\t%f,\n", Aii[idx]);
+        if (idx != n)
+            fprintf(fp, "\t\t\t%E,\n", Aii[idx]);
+        else
+            fprintf(fp, "\t\t\t%E\n", Aii[idx]);
     }
 
     fprintf(fp, "\t\t],\n");
     fprintf(fp, "\t\t\"Aij\": [ \n");
-    for (idx = 0; idx < ncoeffs; idx++)
+    for (idx = 1; idx <= ncoeffs; idx++)
     {
-        fprintf(fp, "\t\t\t%f,\n", Aij[idx]);
+        if (idx != ncoeffs)
+            fprintf(fp, "\t\t\t%E,\n", Aij[idx]);
+        else
+            fprintf(fp, "\t\t\t%E\n", Aij[idx]);
     }
 
     fprintf(fp, "\t\t],\n");
     fprintf(fp, "\t\t\"LNZ\": [ \n");
-    for (idx = 0; idx < ncoeffs; idx++)
+    for (idx = 1; idx <= ncoeffs; idx++)
     {
-        fprintf(fp, "\t\t\t%d,\n", LNZ[idx]);
+        if (idx != ncoeffs)
+            fprintf(fp, "\t\t\t%d,\n", LNZ[idx]);
+        else
+            fprintf(fp, "\t\t\t%d\n", LNZ[idx]);
     }
 
     fprintf(fp, "\t\t],\n");
     fprintf(fp, "\t\t\"XLNZ\": [ \n");
-    for (idx = 0; idx < n; idx++)
+    for (idx = 1; idx <= n; idx++)
     {
-        fprintf(fp, "\t\t\t%d,\n", XLNZ[idx]);
+        if (idx != n)
+            fprintf(fp, "\t\t\t%d,\n", XLNZ[idx]);
+        else
+            fprintf(fp, "\t\t\t%d\n", XLNZ[idx]);
     }
 
     fprintf(fp, "\t\t],\n");
     fprintf(fp, "\t\t\"NZSUB\": [ \n");
-    for (idx = 0; idx < ncoeffs; idx++)
+    for (idx = 1; idx <= ncoeffs; idx++)
     {
-        fprintf(fp, "\t\t\t%d,\n", NZSUB[idx]);
+        if (idx != ncoeffs)
+            fprintf(fp, "\t\t\t%d,\n", NZSUB[idx]);
+        else
+            fprintf(fp, "\t\t\t%d\n", NZSUB[idx]);
     }
 
     fprintf(fp, "\t\t]\n\t},\n");
     fprintf(fp, "\t\"b\": [ \n");
-    for (idx = 0; idx < n; idx++)
+    for (idx = 1; idx <= n; idx++)
     {
-        fprintf(fp, "\t\t%f,\n", B[idx]);
+        if (idx != n)
+            fprintf(fp, "\t\t%E,\n", B[idx]);
+        else
+            fprintf(fp, "\t\t%E\n", B[idx]);
     }
     fprintf(fp, "\t]\n");
     fprintf(fp, "}");
@@ -837,17 +854,29 @@ int linsolve(Smatrix *sm, int n)
     int *link = sm->link;
     int *first = sm->first;
 
+    char *line = NULL;
+    size_t len = 0;
+    size_t read;
+
     int i, istop, istrt, isub, j, k, kfirst, newk;
     int error;
     double bj, diagj, ljk;
     FILE *fp;
-    fp = fopen("/home/nico/test.txt", "w");
-    fprintf(fp, "\nHello from EPANET");
-    fclose(fp);
 
+    // dump the struct to file
     error = smatrix_to_json(sm, n);
 
+    // call the python solver
     system("python /home/nico/QuantumApplicationLab/vitens/EPANET/src/py/quantum_linsolve.py");
+
+    // read the output
+    fp = fopen("/home/nico/sol.dat", "r");
+    for (i = 0; i < n; i++)
+    {
+        read = getline(&line, &len, fp);
+        // B[i] = (float)atof(line);
+    }
+    fclose(fp);
 
     memset(temp, 0, (n + 1) * sizeof(double));
     memset(link, 0, (n + 1) * sizeof(int));
