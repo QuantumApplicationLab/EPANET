@@ -1,6 +1,8 @@
 import scipy.sparse as spsp
 import numpy as np
 import json
+import os
+import pickle
 
 
 def json_to_coo(json_data: str) -> spsp.coo_array:
@@ -74,9 +76,39 @@ def load_json_data(file_name: str) -> (spsp.csr_array, np.ndarray, np.ndarray): 
     return A, b
 
 
-smat = "/home/nico/smat.json"
-sol = "/home/nico/sol.dat"
-A, b = load_json_data(smat)
-print(A.todense(), b)
-x = -np.linalg.solve(A.todense(), b)
-np.savetxt(sol, x)
+def main():
+
+    # get the path o the shared folder
+    epanet_shared = os.environ["EPANET_QUANTUM"]
+
+    # file where the spare matrix was stored
+    smat = os.path.join(epanet_shared, "smat.json")
+
+    # file where to store the solution
+    sol = os.path.join(epanet_shared, "sol.dat")
+    sol_info = os.path.join(epanet_shared, "sol_info.pckl")
+
+    # file where the quantum solver is pickled
+    solver_pckl = os.path.join(epanet_shared, "solver.pckl")
+
+    # load the data
+    A, b = load_json_data(smat)
+    print(A.todense(), b)
+
+    # unpickle the solver
+    with open(solver_pckl, "rb") as fb:
+        solver = pickle.load(fb)
+
+    # solve and save
+    result = solver(A.todense(), b)
+    try:
+        with open(sol_info, "wb") as fb:
+            pickle.dump(result, fb)
+    except:  # noqa: E722
+        print("Cannot pickle solution info")
+
+    np.savetxt(sol, result.solution)
+
+
+if __name__ == "__main__":
+    main()

@@ -750,7 +750,10 @@ int smatrix_to_json(Smatrix *sm, int n)
     int idx, istart, istop;
 
     FILE *fp;
-    fp = fopen("/home/nico/smat.json", "w");
+    const char *epanet_shared = getenv("EPANET_QUANTUM");
+    char mat_file[256];
+    snprintf(mat_file, sizeof(mat_file), "%s/smat.json", epanet_shared);
+    fp = fopen(mat_file, "w");
 
     fprintf(fp, "{\n\t\"A\": {\n");
     fprintf(fp, "\t\t\"Aii\": [ \n");
@@ -863,14 +866,21 @@ int linsolve(Smatrix *sm, int n)
     double bj, diagj, ljk;
     FILE *fp;
 
+    const char *epanet_shared = getenv("EPANET_QUANTUM");
+    const char *epanet_src = getenv("EPANET_SRC");
+    char sol_file[256];
+    char py_cmd[256];
+
     // dump the struct to file
     error = smatrix_to_json(sm, n);
 
     // call the python solver
-    system("python /home/nico/QuantumApplicationLab/vitens/EPANET/src/py/quantum_linsolve.py");
+    snprintf(py_cmd, sizeof(py_cmd), "python %s/src/py/quantum_linsolve.py", epanet_src);
+    system(py_cmd);
 
     // read the output
-    fp = fopen("/home/nico/sol.dat", "r");
+    snprintf(sol_file, sizeof(sol_file), "%s/sol.dat", epanet_shared);
+    fp = fopen(sol_file, "r");
     for (i = 0; i < n; i++)
     {
         read = getline(&line, &len, fp);
