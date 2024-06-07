@@ -76,20 +76,20 @@ def load_json_data(file_name: str) -> (spsp.csr_array, np.ndarray, np.ndarray): 
     return A, b
 
 
-def main():
+def main(debug=False):
 
     # get the path o the shared folder
-    epanet_shared = os.environ["EPANET_QUANTUM"]
+    epanet_tmp = os.environ["EPANET_TMP"]
 
     # file where the spare matrix was stored
-    smat = os.path.join(epanet_shared, "smat.json")
+    smat = os.path.join(epanet_tmp, "smat.json")
 
     # file where to store the solution
-    sol = os.path.join(epanet_shared, "sol.dat")
-    sol_info = os.path.join(epanet_shared, "sol_info.pckl")
+    sol = os.path.join(epanet_tmp, "sol.dat")
+    sol_info = os.path.join(epanet_tmp, "sol_info.pckl")
 
     # file where the quantum solver is pickled
-    solver_pckl = os.path.join(epanet_shared, "solver.pckl")
+    solver_pckl = os.path.join(epanet_tmp, "solver.pckl")
 
     # load the data
     A, b = load_json_data(smat)
@@ -99,16 +99,19 @@ def main():
     with open(solver_pckl, "rb") as fb:
         solver = pickle.load(fb)
 
-    # solve and save
+    # solve
     result = solver(A.todense(), b)
-    try:
-        with open(sol_info, "wb") as fb:
-            pickle.dump(result, fb)
-    except:  # noqa: E722
-        print("Cannot pickle solution info")
+
+    # pickle the solution
+    if debug:
+        try:
+            with open(sol_info, "wb") as fb:
+                pickle.dump(result, fb)
+        except:  # noqa: E722
+            print("Cannot pickle solution info")
 
     np.savetxt(sol, result.solution)
 
 
 if __name__ == "__main__":
-    main()
+    main(debug=False)

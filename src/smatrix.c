@@ -866,8 +866,8 @@ int linsolve(Smatrix *sm, int n)
     double bj, diagj, ljk;
     FILE *fp;
 
-    const char *epanet_shared = getenv("EPANET_QUANTUM");
-    const char *epanet_src = getenv("EPANET_SRC");
+    const char *epanet_tmp = getenv("EPANET_TMP");
+    const char *epanet_quantum = getenv("EPANET_QUANTUM");
     char sol_file[256];
     char py_cmd[256];
 
@@ -875,11 +875,11 @@ int linsolve(Smatrix *sm, int n)
     error = smatrix_to_json(sm, n);
 
     // call the python solver
-    snprintf(py_cmd, sizeof(py_cmd), "python %s/src/py/quantum_linsolve.py", epanet_src);
+    snprintf(py_cmd, sizeof(py_cmd), "python %s/src/py/quantum_linsolve.py", epanet_quantum);
     system(py_cmd);
 
     // read the output
-    snprintf(sol_file, sizeof(sol_file), "%s/sol.dat", epanet_shared);
+    snprintf(sol_file, sizeof(sol_file), "%s/sol.dat", epanet_tmp);
     fp = fopen(sol_file, "r");
     for (i = 0; i < n; i++)
     {
