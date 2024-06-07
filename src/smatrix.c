@@ -885,9 +885,7 @@ int linsolve(Smatrix *sm, int n)
     {
         read = getline(&line, &len, fp);
         B[i] = (float)atof(line);
-        // printf("%f\n", B[i]);
     }
-    printf("\n");
     fclose(fp);
     return 0;
 }
