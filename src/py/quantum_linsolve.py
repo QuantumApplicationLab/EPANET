@@ -93,7 +93,9 @@ def main(debug=False):
 
     # load the data
     A, b = load_json_data(smat)
-    print(A.todense(), b)
+    # A = A.tocsr()
+    print("A", A.todense())
+    print("B", b)
 
     # unpickle the solver
     with open(solver_pckl, "rb") as fb:
@@ -111,6 +113,7 @@ def main(debug=False):
             print("Cannot pickle solution info")
 
     np.savetxt(sol, result.solution)
+    print("X", result.solution)
 
 
 if __name__ == "__main__":

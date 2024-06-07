@@ -750,7 +750,7 @@ int smatrix_to_json(Smatrix *sm, int n)
     int idx, istart, istop;
 
     FILE *fp;
-    const char *epanet_shared = getenv("EPANET_QUANTUM");
+    const char *epanet_shared = getenv("EPANET_TMP");
     char mat_file[256];
     snprintf(mat_file, sizeof(mat_file), "%s/smat.json", epanet_shared);
     fp = fopen(mat_file, "w");
@@ -881,16 +881,86 @@ int linsolve(Smatrix *sm, int n)
     // read the output
     snprintf(sol_file, sizeof(sol_file), "%s/sol.dat", epanet_tmp);
     fp = fopen(sol_file, "r");
-    for (i = 0; i < n; i++)
+    for (i = 1; i <= n; i++)
     {
         read = getline(&line, &len, fp);
-        // B[i] = (float)atof(line);
+        B[i] = (float)atof(line);
+        // printf("%f\n", B[i]);
     }
+    printf("\n");
     fclose(fp);
+    return 0;
+}
+
+int linsolve_(Smatrix *sm, int n)
+/*
+**--------------------------------------------------------------
+** Input:   sm   = sparse matrix struct
+            n    = number of equations
+** Output:  sm->F = solution values
+**          returns 0 if solution found, or index of
+**          equation causing system to be ill-conditioned
+** Purpose: solves sparse symmetric system of linear
+**          equations using Cholesky factorization
+**
+** NOTE:   This procedure assumes that the solution matrix has
+**         been symbolically factorized with the positions of
+**         the lower triangular, off-diagonal, non-zero coeffs.
+**         stored in the following integer arrays:
+**            XLNZ  (start position of each column in NZSUB)
+**            NZSUB (row index of each non-zero in each column)
+**            LNZ   (position of each NZSUB entry in Aij array)
+**
+**  This procedure has been adapted from subroutines GSFCT and
+**  GSSLV in the book "Computer Solution of Large Sparse
+**  Positive Definite Systems" by A. George and J. W-H Liu
+**  (Prentice-Hall, 1981).
+**--------------------------------------------------------------
+*/
+{
+    double *Aii = sm->Aii;
+    double *Aij = sm->Aij;
+    double *B = sm->F;
+    double *temp = sm->temp;
+    int *LNZ = sm->LNZ;
+    int *XLNZ = sm->XLNZ;
+    int *NZSUB = sm->NZSUB;
+    int *link = sm->link;
+    int *first = sm->first;
+    int ncoeffs = sm->Ncoeffs;
+
+    char *line = NULL;
+    size_t len = 0;
+    size_t read;
+
+    int i, istop, istrt, isub, j, k, kfirst, newk;
+    int error;
+    double bj, diagj, ljk;
 
     memset(temp, 0, (n + 1) * sizeof(double));
     memset(link, 0, (n + 1) * sizeof(int));
     memset(first, 0, (n + 1) * sizeof(int));
+
+    printf("Aii = [\n");
+    for (i = 1; i <= n; i++)
+    {
+        printf("%f\n", Aii[i]);
+    }
+    printf("]\n\n");
+
+    printf("Aij = [\n");
+    for (i = 1; i <= ncoeffs; i++)
+    {
+        printf("%f\n", Aij[i]);
+    }
+    printf("]\n\n");
+
+    printf("B = [\n");
+    for (i = 1; i <= n; i++)
+    {
+        printf("%f\n", B[i]);
+    }
+    printf("]\n\n");
 
     // Begin numerical factorization of matrix A into L
     //   Compute column L(*,j) for j = 1,...n
@@ -957,6 +1027,13 @@ int linsolve(Smatrix *sm, int n)
         }
     } // next j
 
+    printf("Lii = [\n");
+    for (i = 1; i <= n; i++)
+    {
+        printf("%f\n", Aii[i]);
+    }
+    printf("]\n\n");
+
     // Foward substitution
     for (j = 1; j <= n; j++)
     {
@@ -990,5 +1067,12 @@ int linsolve(Smatrix *sm, int n)
         }
         B[j] = bj / Aii[j];
     }
+
+    printf("X = [\n");
+    for (j = 1; j <= n; j++)
+    {
+        printf("%f\n", B[j]);
+    }
+    printf("]\n");
     return 0;
 }
