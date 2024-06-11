@@ -93,16 +93,25 @@ def main(debug=False):
 
     # load the data
     A, b = load_json_data(smat)
-    # A = A.tocsr()
-    print("A", A.todense())
-    print("B", b)
+
+    # symmetrize the matrix
+    A = A.todense()
+    size = A.shape[0]
+    Adiag = np.diag(A)
+    A = A - np.diag(Adiag)
+    A[np.triu_indices(size, k=1)] = 0
+    A = A + A.T
+    A = A + np.diag(Adiag)
+
+    # make the matrix to csc format
+    A = spsp.csc_array(A)
 
     # unpickle the solver
     with open(solver_pckl, "rb") as fb:
         solver = pickle.load(fb)
 
     # solve
-    result = solver(A.todense(), b)
+    result = solver(A, b)
 
     # pickle the solution
     if debug:
@@ -113,7 +122,12 @@ def main(debug=False):
             print("Cannot pickle solution info")
 
     np.savetxt(sol, result.solution)
-    print("X", result.solution)
+    if debug:
+        print("A", A.todense())
+        print("B", b)
+    x = result.solution
+    residue = np.linalg.norm(A @ x - b)
+    print("X", x, residue)
 
 
 if __name__ == "__main__":

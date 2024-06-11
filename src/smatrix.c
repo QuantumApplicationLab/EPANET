@@ -926,7 +926,7 @@ int linsolve_(Smatrix *sm, int n)
     int *link = sm->link;
     int *first = sm->first;
     int ncoeffs = sm->Ncoeffs;
-
+    int debug = 0;
     char *line = NULL;
     size_t len = 0;
     size_t read;
@@ -939,26 +939,30 @@ int linsolve_(Smatrix *sm, int n)
     memset(link, 0, (n + 1) * sizeof(int));
     memset(first, 0, (n + 1) * sizeof(int));
 
-    printf("Aii = [\n");
-    for (i = 1; i <= n; i++)
+    if (debug)
     {
-        printf("%f\n", Aii[i]);
-    }
-    printf("]\n\n");
 
-    printf("Aij = [\n");
-    for (i = 1; i <= ncoeffs; i++)
-    {
-        printf("%f\n", Aij[i]);
-    }
-    printf("]\n\n");
+        printf("Aii = [\n");
+        for (i = 1; i <= n; i++)
+        {
+            printf("%f\n", Aii[i]);
+        }
+        printf("]\n\n");
 
-    printf("B = [\n");
-    for (i = 1; i <= n; i++)
-    {
-        printf("%f\n", B[i]);
+        printf("Aij = [\n");
+        for (i = 1; i <= ncoeffs; i++)
+        {
+            printf("%f\n", Aij[i]);
+        }
+        printf("]\n\n");
+
+        printf("B = [\n");
+        for (i = 1; i <= n; i++)
+        {
+            printf("%f\n", B[i]);
+        }
+        printf("]\n\n");
     }
-    printf("]\n\n");
 
     // Begin numerical factorization of matrix A into L
     //   Compute column L(*,j) for j = 1,...n
@@ -1025,13 +1029,6 @@ int linsolve_(Smatrix *sm, int n)
         }
     } // next j
 
-    printf("Lii = [\n");
-    for (i = 1; i <= n; i++)
-    {
-        printf("%f\n", Aii[i]);
-    }
-    printf("]\n\n");
-
     // Foward substitution
     for (j = 1; j <= n; j++)
     {
@@ -1066,10 +1063,10 @@ int linsolve_(Smatrix *sm, int n)
         B[j] = bj / Aii[j];
     }
 
-    printf("X = [\n");
+    printf("X = [ ");
     for (j = 1; j <= n; j++)
     {
-        printf("%f\n", B[j]);
+        printf("%.3f ", B[j]);
     }
     printf("]\n");
     return 0;
