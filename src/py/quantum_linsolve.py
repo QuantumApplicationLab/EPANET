@@ -51,6 +51,36 @@ def json_to_coo(json_data: str) -> spsp.coo_array:
     return spsp.coo_matrix((data, (row, col)), shape=(size, size))
 
 
+def process_matrix(A):
+    """Process the matrix to create a symmetrize version
+
+    Args:
+        A (sp matrix): input matrix
+    """
+
+    # symmetrize the matrix
+    A = A.todense()
+    size = A.shape[0]
+
+    # remove diag
+    Adiag = np.diag(A)
+    A = A - np.diag(Adiag)
+
+    # set upper triangular part to 0
+    A[np.triu_indices(size, k=1)] = 0
+
+    # symmetrize
+    A = A + A.T
+
+    # add diagonal
+    A = A + np.diag(Adiag)
+
+    # make the matrix to csc format
+    A = spsp.csc_array(A)
+
+    return A
+
+
 def load_json_data(file_name: str) -> (spsp.csr_array, np.ndarray, np.ndarray):  # type: ignore
     """Load a matrix from a json file corresponding to the linear system A x = b
 
@@ -69,6 +99,9 @@ def load_json_data(file_name: str) -> (spsp.csr_array, np.ndarray, np.ndarray): 
 
     # create the matrix
     A = json_to_coo(data)
+
+    # process matrix
+    A = process_matrix(A)
 
     # create the rhs
     b = np.array(data["b"])
@@ -94,18 +127,6 @@ def main(debug=False):
     # load the data
     A, b = load_json_data(smat)
 
-    # symmetrize the matrix
-    A = A.todense()
-    size = A.shape[0]
-    Adiag = np.diag(A)
-    A = A - np.diag(Adiag)
-    A[np.triu_indices(size, k=1)] = 0
-    A = A + A.T
-    A = A + np.diag(Adiag)
-
-    # make the matrix to csc format
-    A = spsp.csc_array(A)
-
     # unpickle the solver
     with open(solver_pckl, "rb") as fb:
         solver = pickle.load(fb)
@@ -125,9 +146,9 @@ def main(debug=False):
     if debug:
         print("A", A.todense())
         print("B", b)
-    x = result.solution
-    residue = np.linalg.norm(A @ x - b)
-    print("X", x, residue)
+        x = result.solution
+        residue = np.linalg.norm(A @ x - b)
+        print("X", x, residue)
 
 
 if __name__ == "__main__":
