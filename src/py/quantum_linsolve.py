@@ -109,8 +109,7 @@ def load_json_data(file_name: str) -> (spsp.csr_array, np.ndarray, np.ndarray): 
     return A, b
 
 
-def main(debug=False):
-
+def main(debug=False, save_intermediate_linear_solver_results=True):
     # get the path o the shared folder
     epanet_tmp = os.environ["EPANET_TMP"]
 
@@ -134,13 +133,25 @@ def main(debug=False):
     # solve
     result = solver(A, b)
 
-    # pickle the solution
-    if debug:
+    # pickle the solution by appending it to a list of previous solutions
+    if debug or save_intermediate_linear_solver_results:
         try:
-            with open(sol_info, "wb") as fb:
-                pickle.dump(result, fb)
-        except:  # noqa: E722
-            print("Cannot pickle solution info")
+            if not os.path.exists(sol_info):
+                # initialize sol_info with the first result
+                with open(sol_info, "wb") as fb:
+                    pickle.dump([result], fb)
+            else:
+                # append the new result to sol_info
+                with open(sol_info, "rb") as fb:
+                    existing_data = pickle.load(fb)
+                if isinstance(existing_data, list):
+                    existing_data.append(result)
+                else:
+                    existing_data = [existing_data, result]
+                with open(sol_info, "wb") as fb:
+                    pickle.dump(existing_data, fb)
+        except Exception as err:
+            print(f"An error occurred while saving intermediate linear solver results: {err}")
 
     np.savetxt(sol, result.solution)
     if debug:
@@ -152,4 +163,4 @@ def main(debug=False):
 
 
 if __name__ == "__main__":
-    main(debug=False)
+    main(debug=False, save_intermediate_linear_solver_results=True)
