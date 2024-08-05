@@ -133,23 +133,21 @@ def main(debug=False, save_intermediate_linear_solver_results=True):
     # solve
     result = solver(A, b)
 
-    # pickle the solution by appending it to a list of previous solutions
+    # pickle the solution and/or append it to a list of previous solutions
     if debug or save_intermediate_linear_solver_results:
         try:
-            if not os.path.exists(sol_info):
-                # initialize sol_info with the first result
-                with open(sol_info, "wb") as fb:
-                    pickle.dump([result], fb)
-            else:
-                # append the new result to sol_info
+            existing_data = []
+            if os.path.exists(sol_info):
+                # read existing data
                 with open(sol_info, "rb") as fb:
                     existing_data = pickle.load(fb)
-                if isinstance(existing_data, list):
-                    existing_data.append(result)
-                else:
-                    existing_data = [existing_data, result]
-                with open(sol_info, "wb") as fb:
-                    pickle.dump(existing_data, fb)
+                if not isinstance(existing_data, list):
+                    existing_data = [existing_data]
+            # append the new result
+            existing_data.append(result)
+            # write updated data
+            with open(sol_info, "wb") as fb:
+                pickle.dump(existing_data, fb)
         except Exception as err:
             print(f"An error occurred while saving intermediate linear solver results: {err}")
 
