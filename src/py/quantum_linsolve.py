@@ -3,6 +3,7 @@ import numpy as np
 import json
 import os
 import pickle
+import dill
 
 
 def json_to_coo(json_data: str) -> spsp.coo_array:
@@ -109,6 +110,31 @@ def load_json_data(file_name: str) -> (spsp.csr_array, np.ndarray, np.ndarray): 
     return A, b
 
 
+def save_serializable_result(result, sol_info):
+    """Pickle intermediate linear solver results."""
+    # check if the object is serializable
+    if not dill.pickles(result):
+        print(f"Object {result.__class__.__name__} not serializable.")
+        print(f"{sol_info} not created.")
+        return
+
+    try:
+        existing_data = []
+        if os.path.exists(sol_info):
+            with open(sol_info, "rb") as fb:
+                existing_data = dill.load(fb)
+                if not isinstance(existing_data, list):
+                    existing_data = [existing_data]
+
+        # append the new result and save it back to the file
+        existing_data.append(result)
+        with open(sol_info, "wb") as fb:
+            dill.dump(existing_data, fb)
+
+    except Exception as err:
+        print(f"An error occurred while saving intermediate linear solver results: {err}")
+
+
 def main(debug=False, save_intermediate_linear_solver_results=True):
     # get the path o the shared folder
     epanet_tmp = os.environ["EPANET_TMP"]
@@ -133,23 +159,9 @@ def main(debug=False, save_intermediate_linear_solver_results=True):
     # solve
     result = solver(A, b)
 
-    # pickle the solution and/or append it to a list of previous solutions
     if debug or save_intermediate_linear_solver_results:
-        try:
-            existing_data = []
-            if os.path.exists(sol_info):
-                # read existing data
-                with open(sol_info, "rb") as fb:
-                    existing_data = pickle.load(fb)
-                if not isinstance(existing_data, list):
-                    existing_data = [existing_data]
-            # append the new result
-            existing_data.append(result)
-            # write updated data
-            with open(sol_info, "wb") as fb:
-                pickle.dump(existing_data, fb)
-        except Exception as err:
-            print(f"An error occurred while saving intermediate linear solver results: {err}")
+        # save intermediate results
+        save_serializable_result(result, sol_info)
 
     np.savetxt(sol, result.solution)
     if debug:
